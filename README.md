@@ -1,88 +1,65 @@
 # RiskyUser101
 
-A guided M365 risky-user investigation workbench for engineers. Follow the evidence, capture findings, distinguish user compromise from control gaps, and copy a structured plain-text handoff into your ticket.
+A guided **Entra ID risk check for first- and second-line engineers**. Follow the core checks, record findings, review explained recommendations, and copy plain-text ticket notes.
 
-## Run locally
+**Live guide:** https://thexyloman.github.io/RiskyUser101/
 
-Requires Node.js 22 or later; no installation or build is needed.
+## Engineer workflow
+
+1. Find the user: email, optional client, optional ticket reference. Confirm the tenant in Entra.
+2. Check the sign-in: time, app, IP, location, result, Microsoft risk, and surrounding attempts.
+3. Check password and MFA results: separate failed passwords, accepted passwords with failed MFA, successful MFA, passwordless authentication, existing claims, and confirmed password-only access.
+4. Check the device and Conditional Access using the Entra sign-in tabs: join type, managed/compliant status, expected device, and policy enforcement or exclusions.
+5. Verify the user and review MFA methods, audit changes, admin roles, user risk, and suspicious session indicators.
+6. Record actions and escalation. Recommendations remain recommendations until the engineer records completion evidence.
+7. Copy editable ticket notes, including any outstanding evidence and follow-up.
+
+All portal checks stay within Entra ID. There are no request/correlation identifiers, app/resource/device IDs, mailbox checks, or other workload investigations. Wider incident work belongs to the senior team. Routine written notes are optional; unknown/unavailable answers require reasons and remain investigation gaps. Detailed explanations are expandable.
+
+## Run and test
+
+No dependencies or build step. Use Node.js 22 or newer:
 
 ```sh
 npm test
 npm run serve
 ```
 
-Open **http://127.0.0.1:4173/RiskyUser101/**. The preview mirrors the GitHub Pages repository path. Use an HTTP server instead of opening `index.html` as a file: browser module and storage restrictions differ for file URLs.
+Open `http://127.0.0.1:4173/RiskyUser101/`. The local server mirrors the GitHub Pages repository path. CI runs the tests and checks JavaScript syntax on pull requests and main.
 
-## GitHub Pages deployment
+Files under `docs/` use relative paths. Workflow content, assessment rules, session storage, summary generation, and UI are separate modules. Tests cover authentication branches, case aggregation, stale answers, gaps, actions/overrides, session recovery/migration, clearing, storage failure, safe rendering, and Entra-only scope.
 
-The static website lives in `docs/`. After merging the application PR into `main`:
+## GitHub Pages
 
-1. Open repository **Settings → Pages**.
-2. Select **Deploy from a branch**.
-3. Select **main** and **/docs**, then **Save**.
-4. Wait for deployment. The expected address is **https://thexyloman.github.io/RiskyUser101/**; use the exact address reported by GitHub if configuration changes it.
-5. Verify styles and scripts load, create a fictional case, refresh, copy/select a partial ticket summary, and use **End session** to clear the case.
+Repository Settings → Pages → Deploy from a branch → **main /docs** → Save. Merged changes publish automatically. After deployment, check the Pages build result, load the live guide, and verify the changed assets and basic flow.
 
-CI runs decision, summary, storage, and static-file checks on PRs and pushes to main. Branch-based Pages needs no separate application build workflow. No secrets or Microsoft Graph permissions are required.
+## Session privacy
 
-## Investigation coverage
+Only the current case is stored in tab-scoped `sessionStorage`. There is no backend, localStorage, analytics, external script, or case data in URLs/network requests. A restrictive CSP blocks application network connections. User input renders as text. Generic portal links use `noopener noreferrer` and do not include case details.
 
-- Tenant/user lookup, privileged access, licensing, period and timezone.
-- Multiple interactive/non-interactive sign-ins, surrounding activity, detections, and request/correlation IDs.
-- Password acceptance, MFA/strong authentication, reused claims, overall access, and confirmed password-only access.
-- App/resource identities, protocol, IP/ASN/location, VPN/travel, device trust, management, compliance, and individual policy results.
-- Independent verification, method changes, unexpected approvals, phishing, and token/session correlation.
-- Forwarding and hidden rules, delegates, messages, consent/permissions, account/role changes, files, alerts, persistence and impact.
-- Recommended/pending/escalated/completed actions, engineer overrides, senior ownership, and ticket notes.
+Refresh recovers the case. Ordinary independently opened tabs have separate cases; browser tab duplication/restoration can copy or restore session storage. **End session** explicitly removes the application’s current and previous-version keys, leaving unrelated storage alone. If storage is unavailable, the app continues in memory and warns that refresh clears the case. Never enter passwords, recovery codes, or token values.
 
-The guide reads no tenant data and performs no resets, revocations, tenant changes, or notifications. Follow the organisation’s authorised incident process for operational actions.
+Existing version-1 tab sessions retain compatible core answers and action records when updated. Removed fields are discarded, older out-of-scope action notes are carried into follow-up, and all checks reopen for review. Ticket drafts are regenerated for the new scope.
 
-## Session-only evidence
+## Assessments and escalation
 
-Answers, progress, actions, and the ticket draft use **tab-scoped sessionStorage** under one application key. They survive refresh, with no history or backend. No localStorage, database, analytics, external font/script, evidence-bearing URL, or network request carries answers.
+Guide severity, completeness, Microsoft risk, and tenant/control findings remain separate. The highest applicable severity wins; no compromise percentages are calculated. Accepted credentials in unauthorized activity, unauthorized successful access/MFA approval or MFA changes, and corroborated token compromise are High. Confirmed unauthorized access for an Entra admin is Critical. Unresolved concerns are Medium. Completed unsuccessful-only checks can be Low; complete, supported legitimate activity can produce “No compromise identified”. Gaps prevent a conclusive safe outcome.
 
-Ordinary independent tabs have separate sessions. Browsers can restore or duplicate a tab session. **End session** explicitly clears the application key and in-memory case; use it when finished. If storage is unavailable, the guide falls back to memory and indicates that refresh clears the case. Unrelated storage is preserved.
+Every confirmed password-only cloud access gap requires senior review, including approved exceptions. A “single factor” label alone does not prove missing MFA. Policy results, enrolled devices, and MFA success do not prove legitimacy. Changes to earlier answers reopen dependent checks and exclude stale findings until reviewed. Engineer overrides preserve the guide calculation and escalation requirements.
 
-Copying the summary deliberately transfers text to the engineer’s clipboard. The tool does not save tickets or transmit their text. Never enter passwords, tokens, recovery codes, or secrets. Hosting serves generic guide files; it does not grant M365 access or provide a team case database.
+The guide performs no Entra changes or notifications. Password resets, session revocation, sign-in blocking, and MFA changes follow the engineer’s authorised runbook. Hybrid password authority and the limits of immediate session revocation are explained in the action guidance.
 
-## Assessment rules
+## Sources
 
-The guide assessment is separate from Microsoft’s reported risk. It uses the highest triggered severity, without probabilities or a points total:
-
-| Severity | Evidence |
-| --- | --- |
-| Critical | Confirmed malicious privileged access, active attacker persistence, or exfiltration |
-| High | Accepted credentials for verified unauthorized activity, unauthorized successful access/MFA approval or method changes, credential-compromise detection, or corroborated token compromise |
-| Medium | Unresolved detections, suspicious context/activity, or identity concerns |
-| Low | Fully reviewed unsuccessful-only attempts without accepted credentials or unauthorized access |
-| No compromise identified | Complete evidence supports legitimate activity without contradictory findings |
-| Unassessed | Insufficient reviewed evidence |
-
-Unknowns, unavailable evidence, pending verification, unchecked stages, and stale answers keep assessments provisional. Reasoned not-applicable findings are recorded. Confirmed password-only cloud access always creates senior control escalation, even with an exception; it does not alone prove compromise. The “single factor” label alone is insufficient.
-
-Earlier finding changes invalidate dependent checks. Retained answers remain visible with a warning and are excluded until rechecked. One event’s changes do not invalidate another event’s authentication. Completed-action records remain even if recommendations change. Overrides retain calculated severity/control escalation and require reconfirmation after evidence changes.
-
-Ticket notes flag partial investigations and separate completed actions with evidence/timestamps from recommendations. Custom summary edits last for the session; changing findings regenerates the draft. No-compromise closure is rejected while checks or contradictory findings remain unresolved.
-
-## Source and maintenance
-
-- `docs/assets/content.js`: questions, navigation, explanations, conditional prompts, and sources.
-- `model.js`: risk rules, validation, dependencies, and completion.
-- `session.js`: session persistence and restoration validation.
-- `summary.js`: ticket template and action-status reporting.
-- `app.js` and `styles.css`: browser interface.
-- `tests/`: investigation, dependency, session, summary, and static privacy checks.
-
-Guidance reviewed **10 October 2026** against Microsoft Learn. Portal labels/reports vary by licensing, roles, retention, and updates. Recheck sources before changing rules:
+Guidance reviewed 10 October 2026:
 
 - [Investigate identity risk](https://learn.microsoft.com/en-us/entra/id-protection/howto-identity-protection-investigate-risk)
-- [Authentication details](https://learn.microsoft.com/en-us/entra/identity/authentication/howto-mfa-reporting)
+- [Authentication details and MFA](https://learn.microsoft.com/en-us/entra/identity/authentication/howto-mfa-reporting)
 - [Sign-in fields](https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-sign-in-log-activity-details)
-- [M365 compromise response](https://learn.microsoft.com/en-us/defender-office-365/responding-to-a-compromised-email-account)
 - [Remediate risks](https://learn.microsoft.com/en-us/entra/id-protection/howto-identity-protection-remediate-unblock)
 - [Revocation limits](https://learn.microsoft.com/en-us/entra/identity/users/users-revoke-access)
 - [Session storage](https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage)
 
 ## Browser acceptance
 
-Inspect desktop/mobile layouts and keyboard navigation. Expand guidance, validate fields, add/remove events, change upstream evidence, recheck stale answers, record actions, test copy/select-all, refresh, and end session. Verify browser network activity never includes case text. Use fictional evidence in tests/screenshots.
+Check keyboard navigation and desktop/mobile layouts. Complete a routine case without mandatory prose, exercise risk branches and uncertainty reasons, add/remove sign-ins, change upstream answers, recheck stale answers, record actions, copy/select/regenerate notes, refresh, and end the session. Use fictional evidence in tests and screenshots. The Entra-only notes must not claim a wider compromise investigation was performed.
