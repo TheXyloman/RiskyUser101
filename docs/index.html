@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="An evidence-led, session-only M365 risk investigation guide for engineers.">
+  <title>RiskyUser101 — Investigation workbench</title>
+  <link rel="icon" href="./assets/shield.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/styles.css">
+  <script type="module" src="./assets/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to investigation</a>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="RiskyUser101 home"><img src="./assets/shield.svg" alt="" width="30" height="34"><span>RiskyUser<span class="brand-light">101</span></span></a>
+    <span class="topbar-tag">M365 INVESTIGATION WORKBENCH</span>
+    <div class="topbar-actions"><span class="session-dot" aria-hidden="true"></span><span>Session only</span><button id="end-session" class="button quiet inverted">End session</button></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Investigation navigation">
+      <div class="sidebar-caption">YOUR INVESTIGATION</div>
+      <div id="case-label" class="case-label">New investigation</div>
+      <p id="case-subtitle" class="muted">Start with the user, then follow the evidence.</p>
+      <div class="progress-label"><span id="progress-text">0 checks complete</span><span id="progress-percent">0%</span></div>
+      <progress id="progress" max="100" value="0" aria-label="Investigation progress"></progress>
+      <nav id="step-nav"></nav>
+      <div class="sidebar-bottom"><div class="small-label">THE INVESTIGATION PRINCIPLE</div><p>A successful MFA check is a piece of evidence. It is not the whole story.</p><a href="https://learn.microsoft.com/en-us/entra/id-protection/howto-identity-protection-investigate-risk" target="_blank" rel="noopener noreferrer">Microsoft investigation guidance ↗</a></div>
+    </aside>
+    <main id="workspace" tabindex="-1">
+      <div class="session-banner"><span class="banner-icon" aria-hidden="true">◷</span><div><strong>Your case stays in this tab.</strong> <span id="storage-message">Refresh-safe session storage. Nothing is sent to a server.</span><details class="privacy-details"><summary>About this session</summary><p>Case answers use browser session storage only. There is no saved history, analytics, or automatic submission. Browser restore can retain a tab session; use End session to explicitly clear the case. Copying ticket notes is a deliberate transfer to your clipboard. Never enter passwords, recovery codes, or tokens.</p></details></div></div>
+      <div id="compact-findings" class="compact-findings" aria-label="Current assessment and quick actions"></div>
+      <div class="work-grid"><section id="step-content" aria-label="Current investigation step"></section><aside id="findings-panel" aria-label="Live investigation findings"></aside></div>
+      <footer class="workspace-footer"><span>RiskyUser101 · Evidence before assumptions</span><span id="footer-context">Manual investigation · No tenant actions</span></footer>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="end-dialog" aria-labelledby="end-title"><h2 id="end-title">End this investigation session?</h2><p>This clears the case, its evidence, and the ticket draft from this tab. Copy any ticket notes you need first.</p><div class="dialog-actions"><button id="cancel-end" class="button secondary">Keep investigating</button><button id="confirm-end" class="button danger">Clear and end session</button></div></dialog>
+  <dialog id="remove-dialog" aria-labelledby="remove-title"><h2 id="remove-title">Remove this sign-in event?</h2><p>This removes the event and its evidence. The remaining case checks will need review.</p><div class="dialog-actions"><button id="cancel-remove" class="button secondary">Keep event</button><button id="confirm-remove" class="button danger">Remove event</button></div></dialog>
+</body>
+</html>
