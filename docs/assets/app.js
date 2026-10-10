@@ -65,9 +65,10 @@ function renderFindings() {
 }
 function card(title,children,caption){return node('section',{class:'card'},[node('div',{class:'card-header'},[node('h2',{text:title}),caption?node('span',{class:'small-label',text:caption}):null]),node('div',{class:'card-body'},children)]);}
 function instructionCard(stage) {
+  if(stage.id==='context') return node('section',{class:'card instruction-card'},[node('div',{class:'card-body'},[...stage.portal.map(portal=>node('div',{class:'portal-row'},[node('span',{class:'portal-icon','aria-hidden':'true',text:'↗'}),node('div',{},[link(portal.name,portal.url),p(portal.path)])])),node('details',{class:'why'},[node('summary',{text:'Finding the user: more help'}),node('ol',{class:'instruction-list'},stage.checks.map(c=>node('li',{text:c}))),p(stage.why),sourceLink(stage.source)])])]);
   return node('section',{class:'card instruction-card'},[node('div',{class:'card-header'},[node('h2',{text:'Where to look & what to check'}),node('span',{class:'small-label',text:'ENGINEER GUIDE'})]),node('div',{class:'card-body'},[
     ...stage.portal.map(portal=>node('div',{class:'portal-row'},[node('span',{class:'portal-icon','aria-hidden':'true',text:'↗'}),node('div',{},[link(portal.name,portal.url),p(portal.path)])])),
-    p('Portal labels can vary with licensing and updates. Search for the named report if it is not visible; record missing access rather than skipping it.','field-help'),
+
     node('ol',{class:'instruction-list'},stage.checks.map(c=>node('li',{text:c}))),
     node('details',{class:'why'},[node('summary',{text:'Why these checks matter'}),p(stage.why),sourceLink(stage.source),p('Content reviewed against Microsoft guidance: 10 October 2026.','source-date')])
   ])]);
@@ -99,9 +100,9 @@ function fieldNode(field, stage, event) {
   return node('div',{class:`field ${field.type==='textarea'?'wide':''}`},content);
 }
 function eventToolbar() {
-  const selector=node('select',{id:'event-selector',onchange:e=>{state.selectedEvent=e.target.value;clearErrors();save();render();$('event-selector').focus();}},state.events.map((e,i)=>node('option',{value:e.id,text:`Event ${i+1}${e.answers.timestamp?.value?` · ${e.answers.timestamp.value.replace('T',' ')}`:''}`})));
+  const selector=node('select',{id:'event-selector',onchange:e=>{state.selectedEvent=e.target.value;clearErrors();save();render();$('event-selector').focus();}},state.events.map((e,i)=>node('option',{value:e.id,text:`Sign-in ${i+1}${e.answers.timestamp?.value?` · ${e.answers.timestamp.value}`:''}`})));
   selector.value=state.selectedEvent;
-  return node('div',{class:'event-toolbar'},[node('div',{class:'event-selector'},[node('label',{for:'event-selector',text:'CURRENT SIGN-IN EVENT'}),selector]),node('div',{class:'event-actions'},[btn('+ Add event',()=>{addEvent(state);state.stage='events';clearErrors();save();render();toast('New event added. Review its sign-in, authentication, and context.');},'secondary small'),btn('Remove',()=>{$('remove-dialog').showModal();},'quiet small',{disabled:state.events.length===1})])]);
+  return node('div',{class:'event-toolbar'},[node('div',{class:'event-selector'},[node('label',{for:'event-selector',text:'SIGN-IN BEING CHECKED'}),selector]),node('div',{class:'event-actions'},[btn('+ Add sign-in',()=>{addEvent(state);state.stage='events';clearErrors();save();render();toast('New event added. Review its sign-in, authentication, and context.');},'secondary small'),btn('Remove',()=>{$('remove-dialog').showModal();},'quiet small',{disabled:state.events.length===1})])]);
 }
 function branchNotice(stage,event) {
   const v=key=>rawValue(state,key,event); let title,text;
@@ -112,13 +113,13 @@ function branchNotice(stage,event) {
     else if(v('mfa')==='passed'){title='MFA succeeded. Verify who initiated it.';text='Confirm the user recognises the approval and activity. Phishing, unexpected approval, or token theft can coexist with successful MFA.';}
     else if(['fido','hello','passwordless','certificate'].includes(v('method'))){title='Evaluate the actual authentication strength.';text='Strong/passwordless authentication can satisfy MFA. Check the authentication details and policy requirements rather than counting prompts.';}
   }
-  if(stage.id==='integrity'&&(state.events.some(e=>['token','aitm'].includes(e.answers.detection?.value))||v('tokenScreen')==='suspected')){title='Token investigation is required on this path.';text='Capture session correlation evidence below. A successful MFA claim does not resolve a suspicious token detection by itself.';}
+  if(stage.id==='integrity'&&(state.events.some(e=>['token','aitm'].includes(e.answers.detection?.value))||v('tokenScreen')==='suspected')){title='Token investigation is required on this path.';text='Record the simple sign-in details and alert wording below, then hand the concern to the senior identity team. MFA success alone does not explain a token alert.';}
   return title?node('div',{class:'branch-note'},[node('strong',{text:title}),text]):null;
 }
 function evidenceCard(stage,event) {
   const target=targetFor(state,stage,event); const done=target.complete[stage.id]&&!target.stale[stage.id];
-  const evidence=node('textarea',{id:'field-evidence',value:target.evidence[stage.id]||'',maxlength:16000,'aria-required':'true','aria-invalid':errors.some(e=>e.field==='evidence')?'true':null,placeholder:'What did you review? What does the evidence show? Include references, reasoning, and any limitations.',oninput:e=>{updateEvidence(state,stage.id,e.target.value,event);updateSide();}});
-  return node('section',{class:'card'},[node('div',{class:'card-header'},[node('h2',{text:'Evidence & review'}),node('span',{class:'small-label',text:'RECORD YOUR REASONING'})]),node('div',{class:'card-body'},[node('label',{for:'field-evidence',class:'field-help',text:'Evidence inspected, references, and conclusion for this check'}),evidence,p('Do not record secrets. Unknowns and unavailable logs need an explanation and remain outstanding in the assessment.','field-help')]),node('div',{class:'complete-row'},[node('div',{},[node('strong',{class:done?'reviewed-badge':'',text:done?'✓ Check reviewed':'Confirm this check was reviewed'}),p(done?'Changing evidence will reopen this check.':'Review all visible findings and your evidence, then mark checked.')]),btn(done?'Review again':'Mark checked',()=>{
+  const evidence=node('textarea',{id:'field-evidence',value:target.evidence[stage.id]||'',maxlength:16000,'aria-invalid':errors.some(e=>e.field==='evidence')?'true':null,placeholder:'Optional: add a short explanation of anything suspicious or how it was explained.',oninput:e=>{updateEvidence(state,stage.id,e.target.value,event);updateSide();}});
+  return node('section',{class:'card'},[node('div',{class:'card-header'},[node('h2',{text:'Finish this check'}),node('span',{class:'small-label',text:'CHECKPOINT'})]),node('details',{class:'optional-notes',open:!!target.evidence[stage.id]},[node('summary',{text:'Add notes (optional)'}),node('div',{class:'card-body'},[node('label',{for:'field-evidence',class:'field-help',text:'Notes for this check'}),evidence])]),node('div',{class:'complete-row'},[node('div',{},[node('strong',{class:done?'reviewed-badge':'',text:done?'✓ Check reviewed':'Confirm this check was reviewed'}),p(done?'Changing evidence will reopen this check.':'Choose the answers above, then mark checked.')]),btn(done?'Review again':'Mark checked',()=>{
     errors=validateStage(state,stage,event);
     if(errors.length){render();$('validation-errors')?.focus();return;}
     markComplete(state,stage.id,event);save();render();toast('Check marked reviewed. Outstanding unknowns remain visible.');
@@ -142,10 +143,10 @@ function responseStep() {
     const act=state.actions[id]||{status:'recommended',timestamp:'',notes:'',owner:''};
     const update=(key,val)=>{state.actions[id]={...act,...state.actions[id],[key]:val};responseChanged();};
     const status=selectInput(`action-${id}-status`,[['recommended','Recommended — not yet done'],['pending','Pending — owner assigned'],['escalated','Escalated — owner assigned'],['completed','Completed — evidence required']],act.status,v=>{update('status',v);render();$(`action-${id}-status`).focus({preventScroll:true});});
-    return node('section',{class:'card action-card'},[node('div',{class:'card-header'},[node('h2',{text:ACTIONS[id].title}),p(ACTIONS[id].help)]),node('div',{class:'card-body'},[sourceLink(ACTIONS[id].source),!a.recommended.includes(id)?p('Recorded earlier or added manually. Check applicability against the current findings.','field-help'):null,node('div',{class:'form-grid'},[
-      localField('Action status',status),localField('Owner / escalation reference',node('input',{id:`action-${id}-owner`,value:act.owner,maxlength:500,oninput:e=>update('owner',e.target.value)})),
-      localField(`Action timestamp (${state.answers.timezone?.value||'evidence timezone'})`,node('input',{id:`action-${id}-time`,type:'datetime-local',value:act.timestamp,oninput:e=>update('timestamp',e.target.value)})),
-      localField('What was done / pending next step',node('textarea',{id:`action-${id}-notes`,value:act.notes,maxlength:12000,oninput:e=>update('notes',e.target.value)}),'Completed actions need a timestamp and supporting evidence. Pending/escalated actions need an owner.')
+    return node('section',{class:'card action-card'},[node('div',{class:'card-header'},[node('h2',{text:ACTIONS[id].title}),node('details',{class:'why'},[node('summary',{text:'How to do this in Entra'}),p(ACTIONS[id].help),sourceLink(ACTIONS[id].source)])]),node('div',{class:'card-body'},[!a.recommended.includes(id)?p('Recorded earlier or added manually. Check applicability against the current findings.','field-help'):null,node('div',{class:'form-grid'},[
+      localField('Action status',status),act.status!=='recommended'?localField('Owner / escalation reference',node('input',{id:`action-${id}-owner`,value:act.owner,maxlength:500,oninput:e=>update('owner',e.target.value)})):null,
+      act.status==='completed'?localField(`Action timestamp (record the timezone in notes)`,node('input',{id:`action-${id}-time`,type:'datetime-local',value:act.timestamp,oninput:e=>update('timestamp',e.target.value)})):null,
+      act.status!=='recommended'?localField('What was done / pending next step',node('textarea',{id:`action-${id}-notes`,value:act.notes,maxlength:12000,oninput:e=>update('notes',e.target.value)}),'Completed actions need a timestamp and supporting evidence. Pending/escalated actions need an owner.'):null
     ])])]);
   });
   const extra=selectInput('add-action',[['','Add another action…'],...Object.entries(ACTIONS).filter(([key])=>!actionIds.includes(key)).map(([key,item])=>[key,item.title])],'',id=>{if(id){state.actions[id]={status:'recommended',timestamp:'',notes:'',owner:''};responseChanged();render();}});
@@ -158,11 +159,11 @@ function responseStep() {
     a.findings.length?card('Evidence driving the response',a.findings.map(f=>node('div',{class:'finding-item'},[node('span',{class:`finding-tag ${f.severity.toLowerCase()}`,text:f.severity}),node('strong',{text:f.title}),p(f.detail)]))):null,
     ...actionCards,
     actionIds.length<Object.keys(ACTIONS).length?card('Additional authorised actions',[localField('Record an additional action',extra)]):null,
-    card('Senior review & control gaps',[...a.controls.map(c=>node('div',{class:'finding-item'},[node('strong',{text:c.title}),p(c.detail)])),!a.controls.length?p('No confirmed control gaps recorded in current evidence. Unchecked areas are not considered clear.','muted'):null,node('div',{class:'form-grid'},[
+    (a.recommended.includes('senior')||state.disposition==='handed_off'||state.escalationOwner||state.escalationNext)?card('Senior review & control gaps',[...a.controls.map(c=>node('div',{class:'finding-item'},[node('strong',{text:c.title}),p(c.detail)])),!a.controls.length?p('No confirmed control gaps recorded in current evidence. Unchecked areas are not considered clear.','muted'):null,node('div',{class:'form-grid'},[
       localField('Senior owner / team',node('input',{id:'escalation-owner',value:state.escalationOwner,maxlength:500,oninput:e=>{state.escalationOwner=e.target.value;responseChanged();}})),
       localField('Next action / handoff reference',node('textarea',{id:'escalation-next',value:state.escalationNext,maxlength:8000,oninput:e=>{state.escalationNext=e.target.value;responseChanged();}}))
-    ])]),
-    card('Engineer assessment',[state.override.stale?node('div',{class:'warning',text:'The evidence changed. Reconfirm the override and its rationale before finalising.'}):null,node('div',{class:'override-grid'},[localField('Assessment override',override,'The calculated severity and control escalations remain in the ticket summary.'),state.override.severity?localField('Override rationale',rationale,'Explain the evidence supporting your judgement. Overrides do not suppress required control escalation.'):null])]),
+    ])]):null,
+    node('details',{class:'card optional-assessment',open:!!state.override.severity},[node('summary',{text:'Optional: engineer assessment override'}),node('div',{class:'card-body'},[state.override.stale?node('div',{class:'warning',text:'The evidence changed. Reconfirm the override and its rationale before finalising.'}):null,node('div',{class:'override-grid'},[localField('Assessment override',override,'The calculated severity and control escalations remain in the ticket summary.'),state.override.severity?localField('Override rationale',rationale,'Explain the evidence supporting your judgement. Overrides do not suppress required control escalation.'):null])])]),
     card('Disposition & follow-up',[node('div',{class:'disposition-grid'},[localField('Investigation disposition',disposition),localField('Follow-up / next review',node('textarea',{id:'followup',value:state.followup,maxlength:8000,oninput:e=>{state.followup=e.target.value;responseChanged();}}))]),p(`${a.gaps.length} evidence gaps remain. A partial handoff is available at any time.`,'field-help'),btn('Mark action plan reviewed',()=>{errors=finalizationErrors(state);if(errors.length){render();$('validation-errors')?.focus();return;}state.complete.response=true;state.ticketDraft=null;save();render();toast('Action plan reviewed. Completed actions remain separate from recommendations.');}),state.complete.response?p('✓ Action plan marked reviewed.','response-status'):null])
   ];
 }
@@ -189,7 +190,7 @@ function nextStep(){
 }
 function render(persist=true){
   const stage=currentStage(); const i=STAGES.indexOf(stage);const a=assess(state);
-  const heading=node('div',{class:'step-heading'},[node('div',{class:'eyebrow',text:`STEP ${String(i+1).padStart(2,'0')} / ${STAGES.length} · ${stage.event?'EVENT REVIEW':'CASE REVIEW'}`}),node('h1',{text:stage.title}),p(stage.subtitle),node('div',{class:'step-meta'},[node('span',{class:'meta-pill',text:stage.event?`EVENT ${state.events.indexOf(selectedEvent())+1} OF ${state.events.length}`:'GUIDED INVESTIGATION'}),node('span',{text:stage.event?'Repeat for each relevant sign-in':'Follow the evidence, record the reasoning'})])]);
+  const heading=node('div',{class:'step-heading'},[node('div',{class:'eyebrow',text:`STEP ${String(i+1).padStart(2,'0')} / ${STAGES.length} · ${stage.event?'EVENT REVIEW':'CASE REVIEW'}`}),node('h1',{text:stage.title}),p(stage.subtitle),stage.id==='context'?null:node('div',{class:'step-meta'},[node('span',{class:'meta-pill',text:stage.event?`EVENT ${state.events.indexOf(selectedEvent())+1} OF ${state.events.length}`:'GUIDED INVESTIGATION'}),node('span',{text:stage.event?'Repeat for each relevant sign-in':'Follow the evidence, record the reasoning'})])]);
   const elements=stage.id==='response'?responseStep():stage.id==='summary'?summaryStep():evidenceStep(stage);
   const controls=node('div',{class:'step-controls'},[btn('← Back',()=>navigate(STAGES[Math.max(i-1,0)].id),'secondary',{disabled:i===0}),stage.id!=='summary'?btn(stage.id==='response'?'Review ticket notes →':'Continue →',nextStep,'next-button'):btn('Back to actions',()=>navigate('response'),'secondary')]);
   $('step-content').replaceChildren(heading,...elements.filter(Boolean),controls);renderNav();renderFindings();if(persist)save();
@@ -200,3 +201,5 @@ $('confirm-end').addEventListener('click',()=>{state=session.clear();errors=[];$
 $('cancel-remove').addEventListener('click',()=>$('remove-dialog').close());
 $('confirm-remove').addEventListener('click',()=>{removeEvent(state,state.selectedEvent);errors=[];$('remove-dialog').close();save();render();toast('Event removed. Review the case-level checks again.');});
 render();
+
+if (session.migrated) toast('Guide updated: your core answers were retained. Review the shortened checks before closing the case.');
